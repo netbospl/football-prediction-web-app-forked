@@ -1,21 +1,73 @@
 from datetime import datetime
 import os
+from typing import Optional
+
+
+def _get_env(name: str, *, default: Optional[str] = None, required: bool = False) -> str:
+    """
+    Read an environment variable, optionally enforcing that it is present.
+
+    :param name: Name of the environment variable.
+    :param default: Default value to use when not required or missing.
+    :param required: When True, raise a RuntimeError if the variable is unset/empty.
+    """
+    value = os.getenv(name, default)
+    if required and (value is None or value == ""):
+        raise RuntimeError(
+            f"Missing required environment variable '{name}'. "
+            "Set it in your environment or .env file before running the app."
+        )
+    return value
+
 
 class Config:
-    FOOTBALL_DATA_URL = "https://www.football-data.co.uk"
-    FOOTBALL_DATA_TABLE = "mmz4281"
+    # External data source
+    FOOTBALL_DATA_URL = _get_env(
+        "FOOTBALL_DATA_URL",
+        default="https://www.football-data.co.uk",
+        required=False,
+    )
+    FOOTBALL_DATA_TABLE = _get_env(
+        "FOOTBALL_DATA_TABLE",
+        default="mmz4281",
+        required=False,
+    )
+
+    # Predictions source (Azure or local file)
+    PREDICTIONS_SOURCE = _get_env(
+        "PREDICTIONS_SOURCE",
+        default="azure",
+        required=False,
+    )
+    PREDICTIONS_LOCAL_PATH = _get_env(
+        "PREDICTIONS_LOCAL_PATH",
+        default="data/predictions_valid.parquet",
+        required=False,
+    )
+
+    _REQUIRE_AZURE = PREDICTIONS_SOURCE.lower() != "local"
 
     # Azure access
-    AZURE_CONNECTION_STRING = os.environ["AZURE_CONNECTION_STRING"]
-    AZURE_CONTAINER_NAME = os.environ["AZURE_CONTAINER_NAME"]
+    AZURE_CONNECTION_STRING = _get_env(
+        "AZURE_CONNECTION_STRING",
+        required=_REQUIRE_AZURE,
+    )
+    AZURE_CONTAINER_NAME = _get_env(
+        "AZURE_CONTAINER_NAME",
+        required=_REQUIRE_AZURE,
+    )
     AZURE_RESULTS_TABLE = "results"
     AZURE_FIXTURES_TABLE = "fixtures"
     AZURE_PROCESSED_TABLE = "processed"
     AZURE_PREDICTIONS_TABLE = "predictions"
     AZURE_MODELS_FOLDER = "models"
 
-    # fpath
-    PREDICTED_FPATH = "static/predicted.txt"
+    # Local file paths
+    PREDICTED_FPATH = _get_env(
+        "PREDICTED_FPATH",
+        default="static/predicted.txt",
+        required=False,
+    )
 
     # starting year for each league
     LEAGUES = {"E0": 5,

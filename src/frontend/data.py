@@ -8,7 +8,13 @@ from ..storage.tables import AzureBlobTable
 
 @st.cache(allow_output_mutation=True)
 def read_data():
-    df = AzureBlobTable(cfg.AZURE_PREDICTIONS_TABLE, ftype="parquet").read("data")
+    source = getattr(cfg, "PREDICTIONS_SOURCE", "azure").lower()
+
+    if source == "local":
+        df = pd.read_parquet(cfg.PREDICTIONS_LOCAL_PATH)
+    else:
+        df = AzureBlobTable(cfg.AZURE_PREDICTIONS_TABLE, ftype="parquet").read("data")
+
     df["F_DATE"] = pd.to_datetime(df["F_DATE"])
     df["Predicted result"] = df.PRED_RESULT_NUM.apply(lambda x: cfg.PRED_MAPPING[x])
     return df

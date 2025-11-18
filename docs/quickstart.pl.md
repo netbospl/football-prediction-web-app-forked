@@ -1,88 +1,120 @@
-# Szybki start �?" Football Prediction Web App
+# Szybki start – Football Prediction Web App
 
-Poni��szy poradnik jest skierowany do osƈb nietechnicznych. Ka��de zadanie zosta�'o uproszczone do jednego polecenia albo gotowego skryptu.
+Ten poradnik jest skierowany do osób nietechnicznych. Każde zadanie zostało uproszczone do jednego polecenia albo gotowego skryptu.
 
-## 1. Co b�tdzie potrzebne
-1. **Popro�> w�'a�>ciciela projektu** o dost�tp do repozytorium GitHub oraz kontenera Azure Blob.
-2. **Zainstaluj Python 3.9+** ze strony [python.org](https://www.python.org/downloads/). W instalatorze zaznacz opcj�t �?�Add Python to PATH�?�.
-3. **Pobierz ZIP z projektem** (zielony przycisk �?�Code�?� ��' �?�Download ZIP�?�), a nast�tpnie rozpakuj go np. do `Dokumenty\football-prediction-web-app-forked`.
+## 1. Co będzie potrzebne
+- Dostęp do repozytorium GitHub (ZIP z kodem) lub klona Git.
+- Zainstalowany Python 3.9+ ze strony [python.org](https://www.python.org/downloads/) (w instalatorze zaznacz „Add Python to PATH”).
+- (Opcjonalnie) dostęp do kontenera Azure Blob – **nie jest wymagany**, jeśli chcesz pracować tylko lokalnie, patrz sekcja „4a. Uruchamianie bez Azure”.
 
-## 2. Dodaj sekrety (jednorazowo)
-1. Otwƈrz **Windows Terminal ��' PowerShell**.
-2. Przejd�� do folderu projektu jedn� komend� (zmie�" �>cie��k�t, je�>li trzeba):
+## 2. Dodaj plik `.env`
+1. Otwórz **Windows Terminal lub PowerShell**.
+2. Przejdź do folderu projektu (dostosuj ścieżkę, jeśli trzeba):
+   ```powershell
+   cd "$env:USERPROFILE\Documents\football-prediction-web-app-forked"
    ```
-   cd "%USERPROFILE%\Documents\football-prediction-web-app-forked"
-   ```
-3. Utwƈrz w�'asny plik ustawieu z szablonu:
-   ```
+3. Skopiuj przykładowy plik konfiguracyjny:
+   ```powershell
    copy .env.example .env
    ```
-4. Otwƈrz go do edycji:
-   ```
+4. Otwórz go do edycji:
+   ```powershell
    notepad .env
    ```
-5. Wklej ci�g po�'�czenia otrzymany od w�'a�>ciciela (albo zaktualizuj warto�>ci zast�tp�):
-   ```
-   AZURE_CONNECTION_STRING=wklej_warto�>��
-   AZURE_CONTAINER_NAME=football-data
-   ```
-   Mo�>esz te�� nadpisa�� opcjonalne ustawieu, je�>li kto�> Ci�t o to poprosi (typowy u��ytkownik nie musi tego robi��):
-   ```
-   FOOTBALL_DATA_URL=https://www.football-data.co.uk
-   FOOTBALL_DATA_TABLE=mmz4281
-   PREDICTED_FPATH=static/predicted.txt
-   ```
-   Zapisz plik i zamknij Notatnik. Ten plik zostaje wy�'�cznie na Twoim komputerze.
+5. W zależności od trybu pracy:
+   - **Z Azure (domyślnie)** – ustaw wartości podane przez właściciela projektu:
+     ```text
+     AZURE_CONNECTION_STRING=...
+     AZURE_CONTAINER_NAME=football-data
+     ```
+   - **Bez Azure, tylko lokalnie** – możesz **pozostawić** `AZURE_CONNECTION_STRING` i `AZURE_CONTAINER_NAME` puste lub zakomentowane i skonfigurować tryb lokalny (szczegóły w sekcji 4a).
+
+Zapisz plik i zamknij Notatnik. Ten plik jest lokalny, nie trafia do repozytorium.
 
 ## 3. Uruchom dashboard (jedno polecenie)
 1. W tym samym oknie PowerShell wpisz:
-   ```
+   ```powershell
    powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"
    ```
-   Skrypt sam stworzy �>rodowisko, doinstaluje pakiety i w�'�czy Streamlit.
-2. Poczekaj, a�� otworzy si�t karta w przegl�darce. Wybierz ligi, przejrzyj metryki i raporty meczowe.
-3. Po zako�"czeniu wrƈ�� do PowerShell i wci�>nij `Ctrl+C`, aby zatrzyma�� aplikacj�t.
+   Skrypt sam stworzy środowisko, zainstaluje pakiety i uruchomi Streamlit.
+2. Poczekaj, aż otworzy się karta w przeglądarce. Wybierz ligi, przejrzyj metryki i raporty meczowe.
+3. Po zakończeniu wróć do PowerShell i wciśnij `Ctrl+C`, aby zatrzymać aplikację.
 
-> **Wskazƈwka:** Gdyby Windows zablokowa�' skrypt, uruchom `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`, a nast�tpnie ponƈw powy��sze polecenie.
+> **Wskazówka:** Gdyby Windows zablokował skrypt, uruchom:
+> ```powershell
+> Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+> ```
+> a następnie ponownie:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"
+> ```
 
-## 4. Od�>wie�� predykcje (jedno polecenie, opcjonalnie)
-Tylko na pro�>b�t w�'a�>ciciela projektu uruchom:
-```
+## 4. Odśwież predykcje (opcjonalnie, wymaga Azure)
+Tylko na prośbę właściciela projektu uruchom:
+```powershell
 powershell -ExecutionPolicy Bypass -File ".\scripts\refresh-predictions.ps1"
 ```
-Skrypt upewni si�t, ��e zale��no�>ci s� gotowe, pobierze najnowsze dane i zaktualizuje metryki w Azure.
+Skrypt upewni się, że zależności są gotowe, pobierze najnowsze dane i zaktualizuje metryki w Azure.
 
-## 4a. Uruchamianie bez Azure (tylko lokalnie)
-Je�>li **nie masz** dost�tp do konta Azure, masz dwie mo�>liwo�>ci:
+## 4a. Uruchamianie bez Azure (w pełni lokalnie)
+Jeśli **nie masz** dostępu do konta Azure albo chcesz pracować tylko lokalnie, masz dwie możliwości.
 
-1. **Praca lokalna bez danych dashboardu**
-   - Sklonuj repozytorium, stw�'rz �>rodowisko wirtualne i zainstaluj zale��no�>ci.
-   - Otwƈrz i uruchamiaj notebook badawczy lokalnie:
-     - `python -m venv .venv`, aktywacja, `pip install -r requirements.txt`
-     - `jupyter notebook train.ipynb`
+### 4a.1. Praca lokalna bez dashboardu
+- Sklonuj repozytorium lub rozpakuj ZIP.
+- Utwórz środowisko wirtualne i zainstaluj zależności:
+  ```powershell
+  cd "$env:USERPROFILE\Documents\football-prediction-web-app-forked"
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  pip install -r requirements.txt
+  ```
+- Uruchamiaj notebook badawczy lokalnie:
+  ```powershell
+  jupyter notebook train.ipynb
+  ```
 
-2. **Dashboard offline z lokalnym plikiem predykcji**
-   - Zdob�d� plik Parquet z predykcjami (np. `data/predictions_valid.parquet`) od osoby, kt�'ra uruchomi�'a pipeline'y.
-   - W `.env` ustaw:
-     ```text
-     PREDICTIONS_SOURCE=local
-     PREDICTIONS_LOCAL_PATH=data/predictions_valid.parquet
-     ```
-   - W tym trybie mo��esz pomin�� `AZURE_CONNECTION_STRING` i `AZURE_CONTAINER_NAME`, ale:
-     - Skrypt od�>wie��aj�cy (`refresh-predictions.ps1`) i `run_pipelines.py` **nie** zadzia�'aj� bez Azure.
-   - Nast�tpnie uruchom:
+### 4a.2. Dashboard offline z lokalnym plikiem predykcji (pełny tryb lokalny)
+W tym trybie dashboard działa normalnie, ale zamiast Azure czyta predykcje z lokalnego pliku Parquet.
+
+1. **Przygotuj plik z predykcjami**
+   - Zdobądź plik Parquet z predykcjami (np. `data/predictions_valid.parquet`) od osoby, która uruchomiła pipeline’y **albo** wygeneruj go lokalnie (np. osobnym skryptem/notebookiem).
+   - Umieść plik w katalogu projektu, np. w `data/predictions_valid.parquet`.
+
+2. **Skonfiguruj `.env` pod tryb lokalny**
+   - Upewnij się, że plik `.env` istnieje (patrz sekcja 2):
      ```powershell
-     powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"
+     copy .env.example .env   # jeśli jeszcze nie istnieje
+     notepad .env
      ```
-     Dashboard odczyta predykcje z lokalnego pliku Parquet zamiast z Azure.
+   - W pliku `.env`:
+     - Możesz **usunąć lub pozostawić puste** wpisy:
+       ```text
+       AZURE_CONNECTION_STRING=
+       AZURE_CONTAINER_NAME=
+       ```
+     - Dodaj/ustaw zmienne odpowiedzialne za tryb lokalny:
+       ```text
+       PREDICTIONS_SOURCE=local
+       PREDICTIONS_LOCAL_PATH=data/predictions_valid.parquet
+       ```
 
-## 5. B�'yskawiczna �>ci�ga
-- `copy .env.example .env` ��' `notepad .env` ��' wklej sekrety ��' zapisz.
-- `powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"` ��' dashboard.
-- `powershell -ExecutionPolicy Bypass -File ".\scripts\refresh-predictions.ps1"` ��' aktualizacja danych.
+3. **Uruchom dashboard bez Azure**
+   W PowerShell w katalogu projektu wpisz:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"
+   ```
+   Dashboard odczyta predykcje z lokalnego pliku Parquet zamiast z Azure. Żadne połączenie z chmurą nie jest wymagane.
+
+> Uwaga: w trybie lokalnym **nie działają**:
+> - skrypt `scripts\refresh-predictions.ps1`,
+> - komenda `python run_pipelines.py` (odświeżanie danych nadal jest zaprojektowane pod Azure).
+
+## 5. Błyskawiczna ściąga
+- `copy .env.example .env` → `notepad .env` → uzupełnij konfigurację.
+- `powershell -ExecutionPolicy Bypass -File ".\scripts\setup-and-launch.ps1"` → uruchom dashboard.
+- (Opcjonalnie, tylko z Azure) `powershell -ExecutionPolicy Bypass -File ".\scripts\refresh-predictions.ps1"` → odśwież dane.
 
 ## Potrzebna pomoc?
-- **Niepoprawny ci�g po�'�czenia:** ponownie otwƈrz plik `notepad .env` i usu�" zb�tdne spacje.
-- **Windows blokuje skrypt:** wykonaj `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` w PowerShell i sprƈbuj jeszcze raz.
-- **Pusta karta Streamlit:** upewnij si�t, ��e konsola ze skryptem nadal dzia�'a; je�>li nie, uruchom ponownie krok 3.
-- **B�'�d podczas od�>wie��ania:** skopiuj czerwony komunikat z konsoli i przeka�� go zespo�'owi technicznemu.
+- **Dashboard nie startuje:** sprawdź, czy `setup-and-launch.ps1` nie zakończył się błędem w konsoli.
+- **Błąd pliku Parquet w trybie lokalnym:** upewnij się, że ścieżka w `PREDICTIONS_LOCAL_PATH` jest poprawna i plik istnieje.
+- **Windows blokuje skrypt:** wykonaj `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` w PowerShell i spróbuj jeszcze raz.

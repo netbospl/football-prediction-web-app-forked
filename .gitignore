@@ -1,3 +1,35 @@
+# Python cache
 __pycache__/
-.env/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment & secrets
+.env
+.env.*
+
+# Notebooks & tooling
 .ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# OS/user files
+.DS_Store
+Thumbs.db
+
+# Streamlit state
+.streamlit/
+
+# Generated artifacts
+*.parquet
+*.pkl
+*.pickle
+*.joblib
+static/predicted.txt
+
+# Logs
+*.log

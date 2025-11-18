@@ -24,6 +24,6 @@ def format_metrics(df):
 
 def metric_dashboard(c, name, metrics):
     metric_containers = c.columns(len(metrics) + 1)
-    metric_containers[0].metric("", name)
+    metric_containers[0].metric("Group", name, label_visibility="hidden")
     for cont, (name, val) in zip(metric_containers[1:], metrics.items()):
         cont.metric(name, val)

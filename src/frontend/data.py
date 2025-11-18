@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 
 from ..utils.config import Config as cfg
-from ..storage.tables import AzureBlobTable
+from ..storage.tables import LocalBlobTable
 
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data
 def read_data():
-    df = AzureBlobTable(cfg.AZURE_PREDICTIONS_TABLE, ftype="parquet").read("data")
+    df = LocalBlobTable(cfg.AZURE_PREDICTIONS_TABLE, ftype="parquet").read("data")
     df["F_DATE"] = pd.to_datetime(df["F_DATE"])
     df["Predicted result"] = df.PRED_RESULT_NUM.apply(lambda x: cfg.PRED_MAPPING[x])
     return df

@@ -1,13 +1,18 @@
 from io import StringIO, BytesIO
+import os
 import urllib.request
 import urllib.parse
 from datetime import datetime
 import pickle
 
 import pandas as pd
-from azure.storage.blob import BlobClient
 
 from ..utils.config import Config as cfg
+
+try:
+    from azure.storage.blob import BlobClient
+except ImportError:
+    BlobClient = None
 
 
 class BlobTable:
@@ -15,7 +20,7 @@ class BlobTable:
         self.table_name = table_name
         self.ftype = ftype
         self.dfs = {}
-    
+
     @property
     def df(self):
         return pd.concat(self.dfs.values())
@@ -24,7 +29,9 @@ class BlobTable:
         path = "/".join([el for el in [self.table_name, partition] if el])
         return f"{path}.{self.ftype}"
 
-    def download(self, partitions=[], concat=False, **kwargs):
+    def download(self, partitions=None, concat=False, **kwargs):
+        if partitions is None:
+            partitions = []
         for p in partitions:
             self.dfs[p] = self.read(p, **kwargs)
             print(datetime.now(), f"read: {self.get_path(p)}", self)
@@ -39,8 +46,61 @@ class BlobTable:
         return self
 
 
+class LocalBlobTable(BlobTable):
+    def __init__(self, table_name="", ftype="csv"):
+        super().__init__(table_name, ftype)
+        self.base_dir = cfg.LOCAL_DATA_DIR
+
+    def _get_file_path(self, partition):
+        relative_path = self.get_path(partition)
+        return os.path.join(self.base_dir, relative_path)
+
+    @property
+    def read(self):
+        return {"csv": self.read_csv,
+                "parquet": self.read_parquet,
+                "pkl": self.read_pkl}[self.ftype]
+
+    @property
+    def write(self):
+        return {"csv": self.write_csv,
+                "parquet": self.write_parquet,
+                "pkl": self.write_pkl}[self.ftype]
+
+    def write_csv(self, partition, data):
+        path = self._get_file_path(partition)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data.to_csv(path, index=False)
+
+    def read_csv(self, partition):
+        path = self._get_file_path(partition)
+        return pd.read_csv(path)
+
+    def write_parquet(self, partition, data):
+        path = self._get_file_path(partition)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data.to_parquet(path, index=False)
+
+    def read_parquet(self, partition):
+        path = self._get_file_path(partition)
+        return pd.read_parquet(path)
+
+    def write_pkl(self, partition, data):
+        path = self._get_file_path(partition)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            pickle.dump(data, f)
+
+    def read_pkl(self, partition):
+        path = self._get_file_path(partition)
+        with open(path, "rb") as f:
+            return pickle.load(f)
+
+
 class AzureBlobTable(BlobTable):
     def __init__(self, table_name="", ftype="csv"):
+        if BlobClient is None:
+            raise RuntimeError("AzureBlobTable requires the azure-storage-blob package.")
         super().__init__(table_name, ftype)
         self.connection_string = cfg.AZURE_CONNECTION_STRING
         self.container_name = cfg.AZURE_CONTAINER_NAME

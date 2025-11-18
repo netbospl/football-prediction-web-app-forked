@@ -78,7 +78,13 @@ def clean_results(df):
 
     # patch date and time
     df["F_TIME"] = df["F_TIME"].fillna("00:00")
-    df["F_DATE"] = pd.to_datetime(df["F_DATE"], dayfirst=True)
+    # Explicit format avoids pandas' dateutil warning while still
+    # respecting day-first dates used in Football-Data.
+    df["F_DATE"] = pd.to_datetime(
+        df["F_DATE"],
+        dayfirst=True,
+        errors="coerce",
+    )
     df = df.sort_values(["F_DATE", "F_TIME"])
 
     # add additional vectorized features

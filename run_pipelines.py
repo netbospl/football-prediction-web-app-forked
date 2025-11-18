@@ -9,12 +9,10 @@ if __name__ == "__main__":
     valid_partitions = get_partitions(cfg.CURRENT_SEASON, cfg.CURRENT_SEASON + 1)
 
     refresh_fixtures()
-    # refresh_results(train_partitions)
-    # refresh_results(test_partitions)
+    refresh_results(train_partitions)
     refresh_results(valid_partitions)
 
-    # preprocess_results(train_partitions, "train")
-    # preprocess_results(test_partitions, "test")
+    preprocess_results(train_partitions, "train")
     preprocess_results(valid_partitions, "valid", add_fixtures=True)
 
-    generate_predictions("valid")
+    generate_predictions("valid", train_table_name="train")

@@ -1,13 +1,17 @@
 from datetime import datetime
 import os
 
+
 class Config:
     FOOTBALL_DATA_URL = "https://www.football-data.co.uk"
     FOOTBALL_DATA_TABLE = "mmz4281"
 
-    # Azure access
-    AZURE_CONNECTION_STRING = os.environ["AZURE_CONNECTION_STRING"]
-    AZURE_CONTAINER_NAME = os.environ["AZURE_CONTAINER_NAME"]
+    # Local storage
+    LOCAL_DATA_DIR = "data"
+
+    # Azure access (optional, for remote deployments)
+    AZURE_CONNECTION_STRING = os.environ.get("AZURE_CONNECTION_STRING", "")
+    AZURE_CONTAINER_NAME = os.environ.get("AZURE_CONTAINER_NAME", "")
     AZURE_RESULTS_TABLE = "results"
     AZURE_FIXTURES_TABLE = "fixtures"
     AZURE_PROCESSED_TABLE = "processed"

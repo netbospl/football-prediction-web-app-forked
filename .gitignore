@@ -1,3 +1,55 @@
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .env/
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
 .ipynb_checkpoints/
+train.ipynb
+
+# Streamlit
+.streamlit/
+
+# Build / distribution
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
+*.whl
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Type checking / tooling caches
+.mypy_cache/
+.cache/
+
+# Logs
+*.log
+
+# IDE / editor config
+.vscode/
+.idea/
+*.code-workspace
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Local data and model artifacts
+data/models/
+data/predictions/
+data/processed/
+data/results/

@@ -1,11 +1,13 @@
 """SQLite database client helpers."""
 
 import json
+import logging
 import os
 import sqlite3
 import subprocess
+import threading
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -13,32 +15,58 @@ from ..utils.config import Config as cfg
 from .schema import create_tables
 
 
-_connection = None
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Thread-local storage for connections
+_local = threading.local()
 
 
-def get_db():
-    """Get a database connection, creating tables if needed.
+class DatabaseError(Exception):
+    """Custom exception for database operations."""
+    pass
 
-    Uses a singleton pattern to reuse connections within a session.
+
+def get_db() -> sqlite3.Connection:
+    """Get a thread-local database connection, creating tables if needed.
+
+    Uses thread-local storage to ensure each thread has its own connection,
+    avoiding SQLite threading issues.
+
+    Returns:
+        sqlite3.Connection: Database connection for current thread
     """
-    global _connection
-    if _connection is None:
+    if not hasattr(_local, 'connection') or _local.connection is None:
         # Ensure directory exists
         db_dir = os.path.dirname(cfg.DB_PATH)
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
 
-        _connection = sqlite3.connect(cfg.DB_PATH, check_same_thread=False)
-        _connection.row_factory = sqlite3.Row
-        create_tables(_connection)
-    return _connection
+        _local.connection = sqlite3.connect(cfg.DB_PATH)
+        _local.connection.row_factory = sqlite3.Row
+        create_tables(_local.connection)
+        logger.debug(f"Created new database connection for thread {threading.current_thread().name}")
+    return _local.connection
 
 
-def init_db():
-    """Initialize the database (create tables if not exist)."""
+def init_db() -> sqlite3.Connection:
+    """Initialize the database (create tables if not exist).
+
+    Returns:
+        sqlite3.Connection: Initialized database connection
+    """
     conn = get_db()
     create_tables(conn)
+    logger.info(f"Database initialized at {cfg.DB_PATH}")
     return conn
+
+
+def close_db() -> None:
+    """Close the database connection for the current thread."""
+    if hasattr(_local, 'connection') and _local.connection is not None:
+        _local.connection.close()
+        _local.connection = None
+        logger.debug(f"Closed database connection for thread {threading.current_thread().name}")
 
 
 def _get_git_sha():
@@ -82,24 +110,39 @@ def get_latest_run() -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def save_predictions(run_id: int, df: pd.DataFrame) -> int:
+def save_predictions(run_id: int, df: pd.DataFrame, raise_on_error: bool = False) -> int:
     """Save predictions to the database.
 
     Args:
         run_id: The run ID to associate with
         df: DataFrame with prediction data
+        raise_on_error: If True, raise exception on first error; otherwise log and continue
 
     Returns:
-        Number of rows inserted
+        Number of rows successfully inserted
+
+    Raises:
+        DatabaseError: If raise_on_error is True and an error occurs
     """
     conn = get_db()
     count = 0
+    errors = []
 
     for _, row in df.iterrows():
         match_key = _make_match_key(row)
 
         # Extract top SHAP features
         shap_top = _extract_top_shap(row)
+
+        # Format date consistently
+        date_val = row.get("F_DATE")
+        if pd.notna(date_val):
+            if hasattr(date_val, 'strftime'):
+                date_str = date_val.strftime('%Y-%m-%d')
+            else:
+                date_str = str(date_val)[:10]
+        else:
+            date_str = None
 
         try:
             conn.execute(
@@ -111,7 +154,7 @@ def save_predictions(run_id: int, df: pd.DataFrame) -> int:
                     run_id,
                     match_key,
                     row.get("F_DIV"),
-                    str(row.get("F_DATE")),
+                    date_str,
                     row.get("F_TIME"),
                     row.get("F_H_TEAM"),
                     row.get("F_A_TEAM"),
@@ -124,26 +167,42 @@ def save_predictions(run_id: int, df: pd.DataFrame) -> int:
             )
             count += 1
         except Exception as e:
-            print(f"Error saving prediction for {match_key}: {e}")
+            error_msg = f"Error saving prediction for {match_key}: {e}"
+            logger.warning(error_msg)
+            errors.append(error_msg)
+            if raise_on_error:
+                raise DatabaseError(error_msg) from e
 
     conn.commit()
+
+    if errors:
+        logger.warning(f"Saved {count}/{len(df)} predictions with {len(errors)} errors")
+    else:
+        logger.info(f"Saved {count} predictions for run {run_id}")
+
     return count
 
 
-def save_trades(run_id: int, trades: List[Dict[str, Any]]) -> int:
+def save_trades(run_id: int, trades: List[Dict[str, Any]], raise_on_error: bool = False) -> int:
     """Save recommended trades to the database.
 
     Args:
         run_id: The run ID to associate with
         trades: List of trade dictionaries
+        raise_on_error: If True, raise exception on first error; otherwise log and continue
 
     Returns:
-        Number of rows inserted
+        Number of rows successfully inserted
+
+    Raises:
+        DatabaseError: If raise_on_error is True and an error occurs
     """
     conn = get_db()
     count = 0
+    errors = []
 
     for trade in trades:
+        match_key = trade.get("match_key", "unknown")
         try:
             conn.execute(
                 """INSERT OR REPLACE INTO trades
@@ -151,8 +210,8 @@ def save_trades(run_id: int, trades: List[Dict[str, Any]]) -> int:
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     run_id,
-                    trade["match_key"],
-                    trade["side"],
+                    match_key,
+                    trade.get("side"),
                     trade.get("odds"),
                     trade.get("score"),
                     trade.get("edge"),
@@ -163,9 +222,19 @@ def save_trades(run_id: int, trades: List[Dict[str, Any]]) -> int:
             )
             count += 1
         except Exception as e:
-            print(f"Error saving trade for {trade.get('match_key')}: {e}")
+            error_msg = f"Error saving trade for {match_key}: {e}"
+            logger.warning(error_msg)
+            errors.append(error_msg)
+            if raise_on_error:
+                raise DatabaseError(error_msg) from e
 
     conn.commit()
+
+    if errors:
+        logger.warning(f"Saved {count}/{len(trades)} trades with {len(errors)} errors")
+    else:
+        logger.info(f"Saved {count} trades for run {run_id}")
+
     return count
 
 

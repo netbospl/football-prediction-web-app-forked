@@ -49,7 +49,7 @@ class BlobTable:
 class LocalBlobTable(BlobTable):
     def __init__(self, table_name="", ftype="csv"):
         super().__init__(table_name, ftype)
-        self.base_dir = cfg.LOCAL_DATA_DIR
+        self.base_dir = cfg.DATA_DIR
 
     def _get_file_path(self, partition):
         relative_path = self.get_path(partition)
@@ -172,3 +172,14 @@ class ExternalBlobTable(BlobTable):
         res = urllib.request.urlopen(req).read()
 
         return pd.read_csv(StringIO(res.decode("utf-8")))
+
+
+def get_storage_table(table_name="", ftype="csv"):
+    """Factory function to get appropriate table class based on config.
+
+    Returns AzureBlobTable when STORAGE_BACKEND=azure and credentials are set,
+    otherwise returns LocalBlobTable.
+    """
+    if cfg.use_azure():
+        return AzureBlobTable(table_name, ftype)
+    return LocalBlobTable(table_name, ftype)

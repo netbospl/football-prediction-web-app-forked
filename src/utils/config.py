@@ -6,12 +6,30 @@ class Config:
     FOOTBALL_DATA_URL = "https://www.football-data.co.uk"
     FOOTBALL_DATA_TABLE = "mmz4281"
 
-    # Local storage
-    LOCAL_DATA_DIR = "data"
+    # Storage backend: "local" or "azure"
+    # When "local", app runs without Azure credentials
+    # When "azure", requires AZURE_CONNECTION_STRING and AZURE_CONTAINER_NAME
+    STORAGE_BACKEND = os.environ.get("STORAGE_BACKEND", "local").lower()
 
-    # Azure access (optional, for remote deployments)
+    # Local storage directories
+    DATA_DIR = os.environ.get("DATA_DIR", "data")
+    LOCAL_DATA_DIR = DATA_DIR  # Alias for backward compatibility
+
+    # SQLite database path (for runs, predictions, trades, results)
+    DB_PATH = os.environ.get("DB_PATH", os.path.join(DATA_DIR, "app.db"))
+
+    # Azure access (optional, only required when STORAGE_BACKEND="azure")
     AZURE_CONNECTION_STRING = os.environ.get("AZURE_CONNECTION_STRING", "")
     AZURE_CONTAINER_NAME = os.environ.get("AZURE_CONTAINER_NAME", "")
+
+    @classmethod
+    def use_azure(cls):
+        """Check if Azure storage should be used."""
+        return (
+            cls.STORAGE_BACKEND == "azure"
+            and cls.AZURE_CONNECTION_STRING
+            and cls.AZURE_CONTAINER_NAME
+        )
     AZURE_RESULTS_TABLE = "results"
     AZURE_FIXTURES_TABLE = "fixtures"
     AZURE_PROCESSED_TABLE = "processed"

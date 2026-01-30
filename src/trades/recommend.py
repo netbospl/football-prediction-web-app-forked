@@ -196,11 +196,12 @@ class TradeRecommender:
     def _calc_model_confidence(self, pred_diff: float) -> float:
         """Calculate model confidence from predicted goal difference.
 
-        Uses a sigmoid function to map PRED_DIFF to a probability-like value.
-        - abs(pred_diff) = 0 → 0.5 (uncertain)
-        - abs(pred_diff) = 1 → ~0.73
-        - abs(pred_diff) = 2 → ~0.88
-        - abs(pred_diff) = 3 → ~0.95
+        Uses a scaled sigmoid function to map abs(PRED_DIFF) to probability.
+        The sigmoid 1/(1+exp(-kx)) naturally maps:
+        - x = 0 → 0.5 (uncertain)
+        - x = 1 → ~0.73 (k=1)
+        - x = 2 → ~0.88 (k=1)
+        - x = 3 → ~0.95 (k=1)
 
         Args:
             pred_diff: Predicted goal difference
@@ -208,11 +209,12 @@ class TradeRecommender:
         Returns:
             Confidence value between 0.5 and 1.0
         """
-        # Use sigmoid with scale factor
+        # Use standard sigmoid: 1 / (1 + exp(-kx))
         # k controls steepness (higher = steeper transition)
         k = 1.0
-        x = abs(pred_diff)
-        return 0.5 + 0.5 * (1 - math.exp(-k * x)) / (1 + math.exp(-k * x))
+        x = abs(pred_diff) if pd.notna(pred_diff) else 0
+        # Sigmoid naturally gives 0.5 at x=0, approaches 1 as x increases
+        return 1.0 / (1.0 + math.exp(-k * x))
 
     def _calc_score(self, edge: float, ev: float, odds: float) -> float:
         """Calculate composite trade score.

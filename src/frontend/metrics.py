@@ -4,11 +4,19 @@ import numpy as np
 
 from ..utils.config import Config as cfg
 
+
 def nullable_pct(num, den):
+    """Calculate percentage, returning NaN if denominator is zero."""
+    if den == 0 or pd.isna(den):
+        return np.nan
     return 100 * num / den
 
+
 def format_pct(n):
-    return "{0:.1f}%".format(n if n == n else 0)
+    """Format a number as percentage string, handling NaN."""
+    if pd.isna(n):
+        return "N/A"
+    return "{0:.1f}%".format(n)
 
 def get_metrics(df, fmt=True):
     df["Finished Games"] = df.F_H_GAMES

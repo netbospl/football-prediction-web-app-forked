@@ -22,11 +22,13 @@ def load_data(leagues):
     return df.sort_values(["F_DATE", "F_TIME", "F_DIV"], ascending=False).reset_index(drop=True)
 
 def aggregate_df(df, col=""):
-    df = df.loc[df.F_RESULT == df.F_RESULT]
+    # Filter to completed matches only (F_RESULT is not NaN)
+    df = df.loc[df.F_RESULT.notna()]
     return df.groupby(col).sum(numeric_only=True) if col else np.transpose(pd.DataFrame(df.sum(numeric_only=True)))
 
 def aggregate_by_date(df, col, rolling=1):
-    df = df.loc[df.F_RESULT == df.F_RESULT]
+    # Filter to completed matches only (F_RESULT is not NaN)
+    df = df.loc[df.F_RESULT.notna()]
     df = df.groupby(col).sum(numeric_only=True).reset_index()
     mn_dt = df[col].min()
     mx_dt = df[col].max()

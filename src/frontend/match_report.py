@@ -41,7 +41,13 @@ class MatchReport:
                                            "Away": self.row["ODDS_A_MAX"]})
         self.f.subheader(self.res_detailed)
         self.f.markdown("SHAP local explanation:")
-        shap_values = dict(self.row[(self.row.index.str.startswith("SHAP")) & (self.row.values != 0)])
+        # Filter SHAP columns: exclude INTERCEPT and zero values
+        shap_mask = (
+            self.row.index.str.startswith("SHAP") &
+            ~self.row.index.str.contains("INTERCEPT") &
+            (self.row.values != 0)
+        )
+        shap_values = dict(self.row[shap_mask])
         shap_df = self.get_shap_table(shap_values)
         self.f.table(shap_df)
 
